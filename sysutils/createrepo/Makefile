@@ -17,7 +17,7 @@ RUN_DEPENDS=	${PYTHON_SITELIBDIR}/sqlitecachec.py:${PORTSDIR}/devel/py-yum-metad
 		${PYTHON_SITELIBDIR}/yum/__init__.py:${PORTSDIR}/sysutils/yum \
 		${PYTHON_SITELIBDIR}/deltarpm.py:${PORTSDIR}/sysutils/deltarpm
 
-USES=		gmake python shebangfix
+USES=		gmake python:2.7 shebangfix
 SHEBANG_FILES=	*.py */*.py Makefile
 
 BUILD_DEPENDS+=	ginstall:${PORTSDIR}/sysutils/coreutils
