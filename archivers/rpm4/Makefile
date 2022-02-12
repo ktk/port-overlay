@@ -1,10 +1,10 @@
 # Created by: Greg Lewis <glewis@FreeBSD.org>
-# $FreeBSD: head/archivers/rpm4/Makefile 522832 2020-01-12 19:45:58Z rodrigo $
 
 PORTNAME=	rpm
-PORTVERSION=	4.15.1
+PORTVERSION=	4.16.1.3
+PORTREVISION=	1
 CATEGORIES=	archivers
-MASTER_SITES=	http://ftp.rpm.org/releases/rpm-4.15.x/
+MASTER_SITES=	http://ftp.rpm.org/releases/rpm-4.16.x/
 PKGNAMESUFFIX=	4
 
 MAINTAINER=	rodrigo@FreeBSD.org
@@ -13,24 +13,26 @@ COMMENT=	Red Hat Package Manager
 LICENSE=	GPLv2
 LICENSE_FILE=	${WRKSRC}/COPYING
 
+BUILD_DEPENDS=	gsed:textproc/gsed
 LIB_DEPENDS=	libpopt.so:devel/popt \
 		libnss3.so:security/nss \
-		libzstd.so:archivers/zstd
-RUN_DEPENDS=	bash:shells/bash
+		libzstd.so:archivers/zstd \
+		libgcrypt.so:security/libgcrypt
+RUN_DEPENDS=	bash:shells/bash \
+		gxargs:misc/findutils
 
-USES=		alias bdb compiler:openmp gmake iconv libarchive libtool \
+USES=		alias bdb sqlite cpe gmake iconv libarchive libtool \
 		lua:52+ python:2.7 pathfix pkgconfig shebangfix tar:bzip2
 USE_LDCONFIG=	yes
 
 GNU_CONFIGURE=	yes
+BINARY_ALIAS=	sed=${LOCALBASE}/bin/gsed
 SHEBANG_FILES=	scripts/brp-python-bytecompile scripts/check-prereqs \
-		scripts/check-rpaths-worker scripts/pythondeps.sh \
-		scripts/pkgconfigdeps.sh scripts/fontconfig.prov \
-		scripts/rpmdb_loadcvt scripts/perl.prov scripts/perl.req  \
-		scripts/pythondistdeps.py scripts/find-lang.sh \
-		python/rpm/transaction.py
-CONFIGURE_ARGS=	--with-external-db \
-		--without-db \
+		scripts/check-rpaths-worker scripts/pkgconfigdeps.sh \
+		scripts/fontconfig.prov scripts/perl.prov scripts/perl.req  \
+		scripts/pythondistdeps.py scripts/find-lang.sh scripts/ocamldeps.sh \
+		scripts/find-debuginfo.sh
+CONFIGURE_ARGS=	--enable-sqlite=yes\
 		--with-popt-prefix="${LOCALBASE}" \
 		--sysconfdir=${PREFIX}/etc \
 		--localstatedir=/var \
@@ -46,6 +48,8 @@ CPPFLAGS+=	-I${LOCALBASE}/include \
 		-I${BDB_INCLUDE_DIR} -I${LUA_INCDIR}
 LDFLAGS+=	-L${LOCALBASE}/lib -L${LOCALBASE}/lib/nss \
 		-L${BDB_LIB_DIR} -L${LUA_LIBDIR}
+
+CONFLICTS_INSTALL=	rpm2cpio # bin/rpm2cpio
 
 PLIST_SUB=	VERSION=${PORTVERSION} \
 		OPSYS=${OPSYS:tl}
@@ -70,6 +74,12 @@ post-patch:
 	@${REINPLACE_CMD} -e 's:\.\./\.\./bin/::' ${WRKSRC}/Makefile.in
 	@${REINPLACE_CMD} -e 's/ __GLIBC__.*/& || defined(__FreeBSD__)/' \
 		${WRKSRC}/system.h
+	@${REINPLACE_CMD} -e 's/\<xargs\>/gxargs/g' ${WRKSRC}/scripts/brp-python-bytecompile \
+		${WRKSRC}/scripts/brp-strip-static-archive \
+		${WRKSRC}/scripts/check-buildroot \
+		${WRKSRC}/scripts/check-rpaths \
+		${WRKSRC}/scripts/find-debuginfo.sh \
+		${WRKSRC}/scripts/vpkg-provides.sh
 
 post-install-PYTHON-off:
 	@${RM} ${STAGEDIR}${PREFIX}/lib/rpm/pythondistdeps.py
